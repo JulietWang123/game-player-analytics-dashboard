@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>[保密项目]玩家数据分析 · Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0f1420; --card:#1a2130; --card2:#212a3d;
+  --txt:#e6ebf5; --sub:#96a0b5;
+  --accent:#4f8cff; --green:#37c98b; --red:#ff6b6b; --amber:#ffb454; --purple:#a887ff;
+  --border:#2a3346;
+}
+body[data-theme=light]{
+  color-scheme:light;
+  --bg:#f3f6fb; --card:#ffffff; --card2:#eef1f7;
+  --txt:#1b2436; --sub:#5b6679;
+  --accent:#2f6bff; --green:#0f9d6a; --red:#e5484d; --amber:#c77a00; --purple:#7a5af8;
+  --border:#dce1ea;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--txt);line-height:1.6;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+.wrap{max-width:1180px;margin:0 auto;padding:8px 24px 60px;}
+
+/* 顶栏 */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+  max-width:1180px;margin:0 auto;padding:34px 24px 6px;}
+.topbar h1{margin:0;font-size:28px;letter-spacing:.5px;}
+.topbar .sub{color:var(--sub);font-size:13.5px;margin-top:6px;}
+.theme-btn{background:var(--card);border:1px solid var(--border);color:var(--txt);
+  width:46px;height:46px;border-radius:12px;font-size:21px;cursor:pointer;flex:0 0 auto;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);}
+.theme-btn:hover{border-color:var(--accent);}
+
+/* Tab 导航（吸顶） */
+.tabs{position:sticky;top:0;z-index:50;display:flex;gap:8px;flex-wrap:wrap;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);padding:12px max(24px,calc((100% - 1180px)/2));margin-top:18px;}
+.tab-btn{background:var(--card);color:var(--sub);border:1px solid var(--border);
+  padding:9px 20px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;
+  transition:all .15s;}
+.tab-btn:hover{color:var(--txt);border-color:var(--accent);transform:translateY(-1px);}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* 面板 */
+.panel{display:none;}
+.panel.active{display:block;animation:fadeIn .35s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+header{text-align:center;margin-bottom:12px;}
+h2.sub-h{font-size:19px;margin:44px 0 6px;padding-left:12px;border-left:4px solid var(--accent);}
+.sec-desc{color:var(--sub);font-size:14px;margin:0 0 20px;padding-left:14px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.kpi .label{color:var(--sub);font-size:13px;margin-bottom:8px;}
+.kpi .value{font-size:26px;font-weight:700;}
+.kpi .unit{font-size:14px;color:var(--sub);font-weight:400;}
+.kpi .delta{font-size:13px;margin-top:6px;}
+.down{color:var(--red);}.up{color:var(--green);}
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin:18px 0;}
+.chart-box h3{margin:0 0 4px;font-size:16px;}
+.chart-box .hint{color:var(--sub);font-size:12.5px;margin:0 0 14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:820px){.grid2{grid-template-columns:1fr;}}
+canvas{max-height:340px;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px;}
+th,td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;}
+th:first-child,td:first-child{text-align:left;}
+td.num{text-align:right;}
+th{color:var(--sub);font-weight:600;}
+.note{background:var(--card2);border:1px solid var(--border);border-left:3px solid var(--amber);
+  border-radius:8px;padding:12px 16px;font-size:13px;color:var(--sub);margin:16px 0;}
+
+/* 模块色块（暗色默认） */
+.module{margin:48px 0 8px;padding:22px 26px;border-radius:16px;
+  transition:background .25s,border-color .25s;}
+.module.m1{background:linear-gradient(120deg,#1a2b45,#141b2b);border:1px solid #2b3d5c;}
+.module.m2{background:linear-gradient(120deg,#3a2340,#1f1830);border:1px solid #57365e;}
+.module.m3{background:linear-gradient(120deg,#123a33,#111f1c);border:1px solid #2f6b57;}
+.module.m4{background:linear-gradient(120deg,#3a1a1a,#1f1212);border:1px solid #6b2f2f;}
+body[data-theme=light] .module.m1{background:linear-gradient(120deg,#e8f0ff,#eef3fc);border-color:#c6d7f2;}
+body[data-theme=light] .module.m2{background:linear-gradient(120deg,#f7eaf8,#f5f0fb);border-color:#e2c8ea;}
+body[data-theme=light] .module.m3{background:linear-gradient(120deg,#e6f7f0,#eef8f4);border-color:#bfe6d5;}
+body[data-theme=light] .module.m4{background:linear-gradient(120deg,#fdecec,#fbf2f2);border-color:#f0c6c6;}
+.module .m-tag{font-size:12.5px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);}
+.module h2.m-title{font-size:25px;margin:6px 0 6px;padding:0;border:none;}
+.module .m-sub{color:var(--sub);font-size:13.5px;margin:0;}
+.module .m-badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+  font-size:12px;padding:3px 11px;border-radius:20px;margin-bottom:6px;}
+.module.m2 .m-badge{background:var(--amber);color:#1a1200;}
+.module.m3 .m-badge{background:var(--green);color:#04140e;}
+.module.m4 .m-badge{background:var(--red);color:#1a0505;}
+
+.bd{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:6px 0 18px;}
+@media(max-width:820px){.bd{grid-template-columns:1fr;}}
+.bd-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.bd-box h3{margin:0 0 8px;font-size:14px;}
+footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:60px;padding-top:20px;border-top:1px solid var(--border);}
+</style>
+</head><body data-theme="dark">
+<div class="topbar">
+  <div>
+    <h1>[保密项目]玩家数据分析</h1>
+    <div class="sub">客观数据统计 · 近半年活跃 n=1,014 · 近1年活跃 n=1,442 · 生成于 2026-09-04</div>
+  </div>
+  <button id="themeBtn" class="theme-btn" title="切换浅色/深色主题">☀️</button>
+</div>
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="1">01 整体概览</button>
+  <button class="tab-btn" data-tab="2">02 近半年专题</button>
+  <button class="tab-btn" data-tab="3">03 近1年对比</button>
+  <button class="tab-btn" data-tab="4">04 风险人群</button>
+</nav>
+<main class="wrap"><section class="panel active" id="panel1">
+<div class="module m1"><div class="m-tag">Module 01 · Overview</div>
+  <h2 class="m-title">模块一 · 整体数据概览</h2>
+  <p class="m-sub">全量玩家的活跃趋势与各周期资产规模。</p></div>
+<h2 class="sub-h">1. 玩家活跃度整体趋势</h2>
+<p class="sec-desc">按月聚合日均登录用户数、ACU、月度新增（全量口径）。</p>
+<div class="cards">
+  <div class="kpi"><div class="label">峰值月均登录</div><div class="value">28,953<span class="unit"> 人/日</span></div></div>
+  <div class="kpi"><div class="label">最新月均登录 (2026-08)</div><div class="value">712<span class="unit"> 人/日</span></div></div>
+  <div class="kpi"><div class="label">较峰值降幅</div><div class="value down">-97.5%</div></div>
+  <div class="kpi"><div class="label">近半年 / 近1年活跃</div><div class="value" style="font-size:20px">1,014 / 1,442</div></div>
+</div>
+<div class="chart-box"><h3>月均登录用户数趋势</h3><canvas id="loginTrend"></canvas></div>
+<div class="grid2">
+  <div class="chart-box"><h3>月均 ACU</h3><canvas id="acuTrend"></canvas></div>
+  <div class="chart-box"><h3>月度新增用户</h3><canvas id="newTrend"></canvas></div>
+</div>
+<h2 class="sub-h">2. 各活跃周期资产总量对比</h2>
+<p class="sec-desc">对比近1周 / 3个月 / 半年 / 1年活跃玩家群体的规模与资产。</p>
+<div class="chart-box"><h3>各活跃周期规模与资产对照表</h3><table id="periodTable"></table></div>
+</section><section class="panel" id="panel2">
+<div class="module m2"><div class="m-badge">★ 重点分析模块</div>
+  <div class="m-tag">Module 02 · Half-Year Active Users</div>
+  <h2 class="m-title">模块二 · 近半年活跃用户专题分析</h2>
+  <p class="m-sub">聚焦近半年活跃的 1,014 名核心玩家：地域渠道、登录时段、<b>冲提额盈亏（重点）</b>、CAC 与资产。</p></div>
+<h2 class="sub-h">3. 地域与渠道分布</h2>
+<div class="grid2">
+  <div class="chart-box"><h3>国家/地区分布 (Top 10)</h3><canvas id="countryChart"></canvas></div>
+  <div class="chart-box"><h3>注册渠道分布</h3><canvas id="channelChart"></canvas></div>
+</div>
+<div class="chart-box"><h3>钱包持有情况</h3>
+  <p class="hint">980 人持有钱包，占 96.6%。</p>
+  <canvas id="walletChart" style="max-height:160px"></canvas></div>
+<h2 class="sub-h">4. 高频登录时段</h2>
+<div class="chart-box"><h3>登录时段分布（0–23 时）</h3><canvas id="hourChart"></canvas></div>
+<h2 class="sub-h">5. 冲提额与链上资金盈亏 ★核心</h2>
+<div class="cards">
+  <div class="kpi"><div class="label">游戏内充值总额</div><div class="value">$105,852</div></div>
+  <div class="kpi"><div class="label">链上净充入 / 净提出 人数</div><div class="value"><span class="up">393</span> / <span class="down">575</span></div><div class="delta">零值 46 人</div></div>
+  <div class="kpi"><div class="label">总冲提额合计</div><div class="value">110,755</div><div class="delta">中位数 27.2</div></div>
+  <div class="kpi"><div class="label">链上净值区间</div><div class="value" style="font-size:19px">-30,581 ~ 51,452</div></div>
+</div>
+<div class="chart-box"><h3>总冲提额分布统计（半年 n=1,014）</h3>
+  <p class="hint">总冲提额 = 游戏内充值 + 链上充提净值。正数=净投入(看似亏损/维权强)；负数=已净提出(获利)。单位：美元。</p>
+  <table style="max-width:760px"><tbody>
+    <tr><th>平均数 Mean</th><td>109.23</td><th>中位数 Median</th><td>27.16</td></tr>
+    <tr><th>最大值 Max</th><td style="color:var(--red);font-weight:600">69,499.38</td><th>最小值 Min</th><td style="color:var(--green);font-weight:600">-30,571.04</td></tr>
+    <tr><th>合计 Sum</th><td>110,754.72</td><th>标准差 Std</th><td>3,182.71</td></tr>
+    <tr><th>P10 / P25</th><td>0.00 / 22.62</td><th>P75 / P90</th><td>71.49 / 265.47</td></tr>
+    <tr><th>P99</th><td>1,854.52</td><th>正 / 负 / 零 人数</th><td><span class="down">895</span> / <span class="up">82</span> / 37</td></tr>
+  </tbody></table></div>
+<div class="grid2">
+  <div class="chart-box"><h3>链上充提净值：净充入 vs 净提出</h3><canvas id="onchainSign"></canvas></div>
+  <div class="chart-box"><h3>总冲提额分档（人数）</h3><canvas id="totalBucket"></canvas></div>
+</div>
+<h2 class="sub-h">6. CAC 余额与游戏内资产</h2>
+<div class="cards">
+  <div class="kpi"><div class="label">CAC 总量</div><div class="value">46.0<span class="unit"> M</span></div></div>
+  <div class="kpi"><div class="label">人均 CAC</div><div class="value">45,403</div><div class="delta">中位数 24,951</div></div>
+  <div class="kpi"><div class="label">CAB 总量</div><div class="value">655,519</div></div>
+  <div class="kpi"><div class="label">神话/普通盲盒</div><div class="value" style="font-size:20px">0 / 2,495</div></div>
+</div>
+<div class="grid2">
+  <div class="chart-box"><h3>CAC 余额分档（人数）</h3><canvas id="cacBucket"></canvas></div>
+  <div class="chart-box"><h3>游戏内资产持有人数</h3><canvas id="assetHolder"></canvas></div>
+</div>
+</section><section class="panel" id="panel3">
+<div class="module m3"><div class="m-badge">＋ 对比模块</div>
+  <div class="m-tag">Module 03 · Half-Year vs One-Year</div>
+  <h2 class="m-title">模块三 · 近1年活跃 vs 近半年活跃 对比分析</h2>
+  <p class="m-sub">对比两个活跃口径（半年 1,014 人 / 1年 1,442 人）的规模与冲提额结构差异。</p></div>
+<h2 class="sub-h">7. 核心指标对比</h2>
+<p class="sec-desc">1年活跃比半年多 428 人（多出的是半年内不活跃、但近1年内曾活跃的用户）。</p>
+<div class="chart-box"><h3>半年 vs 1年 关键指标对照</h3>
+  <table><thead><tr><th>指标</th><th>近半年活跃</th><th>近1年活跃</th></tr></thead><tbody><tr><td>活跃玩家数</td><td class=num>1,014</td><td class=num>1,442</td></tr><tr><td>总冲提额合计(美元)</td><td class=num>110,755</td><td class=num>200,141</td></tr><tr><td>总冲提额中位数</td><td class=num>27.2</td><td class=num>30.7</td></tr><tr><td>总冲提额平均数</td><td class=num>109.2</td><td class=num>138.8</td></tr><tr><td>P90</td><td class=num>265</td><td class=num>355</td></tr><tr><td>P99</td><td class=num>1,855</td><td class=num>2,779</td></tr><tr><td>净投入(亏损)人数</td><td class=num>895</td><td class=num>1,212</td></tr><tr><td>净提出(获利)人数</td><td class=num>82</td><td class=num>131</td></tr></tbody></table></div>
+<div class="grid2">
+  <div class="chart-box"><h3>活跃玩家数 & 冲提额合计对比</h3><canvas id="cmpScale"></canvas></div>
+  <div class="chart-box"><h3>净投入 vs 净提出 人数对比</h3><canvas id="cmpSign"></canvas></div>
+</div>
+<div class="chart-box"><h3>总冲提额分档对比（人数）</h3>
+  <p class="hint">两口径的总冲提额分档人数对比。</p>
+  <canvas id="cmpBucket"></canvas></div>
+<div class="note"><b>解读：</b>近1年活跃总冲提额合计 200,141（半年 110,755），多出的 428 名“半年不活跃但1年活跃”用户贡献了约 89,387 的净投入。1年口径的 P90(355)、P99(2,779) 均高于半年，说明更长周期纳入了更多中高投入的沉默用户——他们虽近期不活跃，但历史投入不小，关停时同样可能维权，值得单独触达。</div>
+</section><section class="panel" id="panel4">
+<div class="module m4"><div class="m-badge">▲ 风险人群模块 · 聚合视角</div>
+  <div class="m-tag">Module 04 · Risk Watchlist (Aggregated)</div>
+  <h2 class="m-title">模块四 · 高风险维权人群分布</h2>
+  <p class="m-sub">从总冲提额(净投入)与综合风险分两个口径，筛出关停时最可能维权的高风险人群（净投入≥1000美元 或 风险分≥40）。本页仅展示地区与金额档的群体聚合统计，不含任何个人明细。</p></div>
+<div class="note"><b>判定口径：</b>总冲提额(净投入)≥1000美元 或 综合风险分≥40；口径同时覆盖“当前仍活跃”与“近1年活跃但近半年沉默”两类人群。<b>沟通前务必先做链上真实盈亏复核（账面亏损≠实际亏损）。</b></div>
+<div class="chart-box"><h3>两维度高风险规模对比</h3>
+  <p class="hint">柱=高风险人数；线=高风险人群净投入合计（美元）。</p>
+  <canvas id="riskCmp"></canvas></div>
+<h2 class="sub-h">维度一 · 近半年活跃（重点人群）</h2>
+<p class="sec-desc">近半年活跃玩家共 997 人，其中高风险 24 人、净投入合计 $176,759。当前仍活跃、维权可能性最高的核心群体。</p>
+<div class="cards">
+  <div class="kpi"><div class="label">该维度玩家规模</div><div class="value">997</div></div>
+  <div class="kpi"><div class="label">高风险人群</div><div class="value" style="color:var(--red)">24</div></div>
+  <div class="kpi"><div class="label">高风险净投入合计</div><div class="value" style="color:var(--red)">$176,759</div></div>
+  <div class="kpi"><div class="label">高风险地区分布</div><div class="value" style="font-size:14px">CN:14 · BR:5 · KR:2 · CA:1 · GB:1 · PT:1</div></div>
+</div>
+<div class="bd">
+  <div class="bd-box"><h3>按地区细分</h3><table class="mini"><thead><tr><th>地区</th><th>人数</th><th>净投入合计</th></tr></thead><tbody><tr><td>CN</td><td class=num>14</td><td class=num>143,916</td></tr><tr><td>BR</td><td class=num>5</td><td class=num>22,746</td></tr><tr><td>KR</td><td class=num>2</td><td class=num>6,540</td></tr><tr><td>CA</td><td class=num>1</td><td class=num>1,280</td></tr><tr><td>GB</td><td class=num>1</td><td class=num>1,191</td></tr><tr><td>PT</td><td class=num>1</td><td class=num>1,087</td></tr></tbody></table></div>
+  <div class="bd-box"><h3>按金额档细分</h3><table class="mini"><thead><tr><th>净投入档(美元)</th><th>人数</th><th>净投入合计</th></tr></thead><tbody><tr><td>1千-5千</td><td class=num>18</td><td class=num>31,749</td></tr><tr><td>5千-1万</td><td class=num>2</td><td class=num>10,559</td></tr><tr><td>1万以上</td><td class=num>3</td><td class=num>133,785</td></tr></tbody></table></div>
+</div>
+<h2 class="sub-h">维度二 · 近1年活跃但近半年未登录（沉默高投入）</h2>
+<p class="sec-desc">近1年活跃但近半年未再登录的玩家共 399 人，其中高风险 16 人、净投入合计 $46,960。历史投入不小，关停消息可能唤回并触发维权。</p>
+<div class="cards">
+  <div class="kpi"><div class="label">该维度玩家规模</div><div class="value">399</div></div>
+  <div class="kpi"><div class="label">高风险人群</div><div class="value" style="color:var(--red)">16</div></div>
+  <div class="kpi"><div class="label">高风险净投入合计</div><div class="value" style="color:var(--red)">$46,960</div></div>
+  <div class="kpi"><div class="label">高风险地区分布</div><div class="value" style="font-size:14px">CN:7 · KR:3 · BR:3 · TW:1 · US:1 · GB:1</div></div>
+</div>
+<div class="bd">
+  <div class="bd-box"><h3>按地区细分</h3><table class="mini"><thead><tr><th>地区</th><th>人数</th><th>净投入合计</th></tr></thead><tbody><tr><td>CN</td><td class=num>7</td><td class=num>20,615</td></tr><tr><td>KR</td><td class=num>3</td><td class=num>13,887</td></tr><tr><td>BR</td><td class=num>3</td><td class=num>6,557</td></tr><tr><td>TW</td><td class=num>1</td><td class=num>3,566</td></tr><tr><td>US</td><td class=num>1</td><td class=num>1,211</td></tr><tr><td>GB</td><td class=num>1</td><td class=num>1,125</td></tr></tbody></table></div>
+  <div class="bd-box"><h3>按金额档细分</h3><table class="mini"><thead><tr><th>净投入档(美元)</th><th>人数</th><th>净投入合计</th></tr></thead><tbody><tr><td>1千-5千</td><td class=num>14</td><td class=num>31,628</td></tr><tr><td>5千-1万</td><td class=num>2</td><td class=num>15,332</td></tr><tr><td>1万以上</td><td class=num>0</td><td class=num>0</td></tr></tbody></table></div>
+</div>
+</section><footer>数据来源：玩家游戏内数据表、链上充提明细(统一源)、日活趋势、活跃玩家资产总量表、双维度风险模型 · 项目名已脱敏 · 客观数据统计，不含主观结论 · 生成于 2026-09-04</footer>
+</main>
+<script>
+const B={"half": {"trend_monthly": [{"month": "2024-03", "avg_login": 14534.7, "avg_acu": 313.1, "avg_pcu": 1184.6, "sum_new": 34388.0}, {"month": "2024-04", "avg_login": 28952.6, "avg_acu": 2849.4, "avg_pcu": 3779.6, "sum_new": 80308.0}, {"month": "2024-05", "avg_login": 14545.9, "avg_acu": 1209.2, "avg_pcu": 1633.1, "sum_new": 4111.0}, {"month": "2024-06", "avg_login": 7903.3, "avg_acu": 580.3, "avg_pcu": 849.4, "sum_new": 1075.0}, {"month": "2024-07", "avg_login": 3727.8, "avg_acu": 250.6, "avg_pcu": 392.2, "sum_new": 391.0}, {"month": "2024-08", "avg_login": 1897.0, "avg_acu": 146.6, "avg_pcu": 239.9, "sum_new": 216.0}, {"month": "2024-09", "avg_login": 1630.1, "avg_acu": 118.8, "avg_pcu": 200.8, "sum_new": 51.0}, {"month": "2024-10", "avg_login": 1352.0, "avg_acu": 97.1, "avg_pcu": 172.8, "sum_new": 0.0}, {"month": "2024-11", "avg_login": 1238.6, "avg_acu": 94.7, "avg_pcu": 162.8, "sum_new": 0.0}, {"month": "2024-12", "avg_login": 1080.6, "avg_acu": 89.2, "avg_pcu": 149.2, "sum_new": 0.0}, {"month": "2025-01", "avg_login": 950.5, "avg_acu": 88.3, "avg_pcu": 136.7, "sum_new": 1.0}, {"month": "2025-02", "avg_login": 926.3, "avg_acu": 88.8, "avg_pcu": 129.1, "sum_new": 1.0}, {"month": "2025-03", "avg_login": 922.2, "avg_acu": 88.6, "avg_pcu": 126.4, "sum_new": 1.0}, {"month": "2025-04", "avg_login": 925.9, "avg_acu": 80.8, "avg_pcu": 118.2, "sum_new": 1.0}, {"month": "2025-05", "avg_login": 901.2, "avg_acu": 81.1, "avg_pcu": 119.9, "sum_new": 0.0}, {"month": "2025-06", "avg_login": 871.0, "avg_acu": 77.7, "avg_pcu": 115.3, "sum_new": 0.0}, {"month": "2025-07", "avg_login": 820.6, "avg_acu": 50.1, "avg_pcu": 85.5, "sum_new": 0.0}, {"month": "2025-08", "avg_login": 811.5, "avg_acu": 45.2, "avg_pcu": 79.2, "sum_new": 0.0}, {"month": "2025-09", "avg_login": 804.3, "avg_acu": 44.6, "avg_pcu": 77.9, "sum_new": 0.0}, {"month": "2025-10", "avg_login": 782.7, "avg_acu": 43.2, "avg_pcu": 75.7, "sum_new": 0.0}, {"month": "2025-11", "avg_login": 773.3, "avg_acu": 39.1, "avg_pcu": 70.6, "sum_new": 0.0}, {"month": "2025-12", "avg_login": 769.8, "avg_acu": 42.5, "avg_pcu": 74.0, "sum_new": 0.0}, {"month": "2026-01", "avg_login": 757.8, "avg_acu": 43.2, "avg_pcu": 76.5, "sum_new": 0.0}, {"month": "2026-02", "avg_login": 768.7, "avg_acu": 51.7, "avg_pcu": 83.2, "sum_new": 0.0}, {"month": "2026-03", "avg_login": 756.4, "avg_acu": 45.2, "avg_pcu": 77.5, "sum_new": 0.0}, {"month": "2026-04", "avg_login": 751.3, "avg_acu": 49.1, "avg_pcu": 83.6, "sum_new": 0.0}, {"month": "2026-05", "avg_login": 741.8, "avg_acu": 44.1, "avg_pcu": 80.7, "sum_new": 0.0}, {"month": "2026-06", "avg_login": 736.2, "avg_acu": 30.7, "avg_pcu": 78.4, "sum_new": 0.0}, {"month": "2026-07", "avg_login": 658.1, "avg_acu": 22.5, "avg_pcu": 67.1, "sum_new": 0.0}, {"month": "2026-08", "avg_login": 712.1, "avg_acu": 23.6, "avg_pcu": 73.1, "sum_new": 0.0}], "trend_summary": {"first_month": "2024-03", "first_login": 14534.7, "last_month": "2026-08", "last_login": 712.1, "peak_login": 28952.6, "login_drop_pct": -95.1}, "player_count": 1014, "country_top": [["CN", 851], ["BR", 80], ["KR", 20], ["US", 14], ["PT", 11], ["GB", 8], ["RU", 6], ["PH", 5], ["TW", 3], ["CA", 3], ["ID", 2], ["HK", 2], ["JP", 2], ["SG", 2], ["FR", 1]], "channel_top": [["GOOGLEPLAY", 841], ["WEB3_30002_2", 138], ["APPSTORE", 35]], "wallet": {"无": 34, "有": 980}, "login_hour": [30, 11, 21, 13, 12, 11, 11, 21, 13, 20, 20, 11, 21, 16, 160, 157, 102, 143, 125, 61, 17, 3, 9, 6], "cac_stats": {"count": 1014, "sum": 46038401.23, "mean": 45402.7625, "std": 83772.5836, "min": 0.0, "max": 734462.2881, "p10": 14.2445, "p25": 13692.5733, "median": 24950.8237, "p75": 36352.0135, "p90": 94399.7967, "p99": 457480.0877}, "game_recharge_stats": {"count": 1014, "sum": 105851.63, "mean": 104.3902, "std": 2068.2908, "min": 0.0, "max": 65923.81, "p10": 19.99, "p25": 39.99, "median": 39.99, "p75": 39.99, "p90": 43.95, "p99": 89.98}, "onchain_net_stats": {"count": 1014, "sum": 4903.09, "mean": 4.8354, "std": 2317.4988, "min": -30581.032, "max": 51452.0364, "p10": -25.8696, "p25": -16.5787, "median": -9.8437, "p75": 32.607, "p90": 219.5404, "p99": 1814.5308}, "total_amount_stats": {"count": 1014, "sum": 110754.72, "mean": 109.2256, "std": 3182.7114, "min": -30571.042, "max": 69499.3756, "p10": 0.0, "p25": 22.6217, "median": 27.164, "p75": 71.4888, "p90": 265.4704, "p99": 1854.5208}, "onchain_sign": {"positive": 393, "negative": 575, "zero": 46}, "total_amount_buckets": [["<-1000", 18], ["-1000~-100", 33], ["-100~0", 31], ["0~100", 741], ["100~1000", 168], ["1000~10000", 20], [">=10000", 3]], "cac_buckets": [["<1", 88], ["1~100", 44], ["100~1000", 45], ["1000~1万", 54], ["1万~10万", 701], [">=10万", 82]], "game_assets": {"cab_total": 655519.0, "box_normal": 2495, "box_season": 23, "box_myth": 0, "myth_frag": 2110, "ahoy_frag": 3700}, "asset_holders": {"普通盲盒": 399, "神话盲盒碎片": 60, "ahoy碎片": 3, "赛季盲盒": 8}, "total_amount_full": {"样本数": 1014, "合计": 110754.72, "平均数": 109.2256, "中位数": 27.164, "标准差": 3182.7114, "最大值": 69499.3756, "最小值": -30571.042, "P10": 0.0, "P25": 22.6217, "P75": 71.4888, "P90": 265.4704, "P99": 1854.5208, "正数(净投入/亏损)人数": 895, "负数(净提出/获利)人数": 82, "零": 37}, "period_assets": [{"活跃周期": "近1周", "活跃玩家数": 735, "历史充值总量(美元)": 30441.24, "CAC总量": 41213616.251513, "CAB总量": 505207.0, "普通盲盒总量": 2189, "赛季盲盒总量": 4, "神话盲盒总量": 0, "神话盲盒碎片总量": 1474, "ahoy碎片总量": 3625}, {"活跃周期": "3个月", "活跃玩家数": 873, "历史充值总量(美元)": 101097.43, "CAC总量": 45267184.941486, "CAB总量": 564152.0, "普通盲盒总量": 2435, "赛季盲盒总量": 21, "神话盲盒总量": 0, "神话盲盒碎片总量": 2073, "ahoy碎片总量": 3700}, {"活跃周期": "半年", "活跃玩家数": 1014, "历史充值总量(美元)": 105851.63, "CAC总量": 46038401.225191, "CAB总量": 655519.0, "普通盲盒总量": 2495, "赛季盲盒总量": 23, "神话盲盒总量": 0, "神话盲盒碎片总量": 2110, "ahoy碎片总量": 3700}, {"活跃周期": "1年", "活跃玩家数": 1442, "历史充值总量(美元)": 124220.38, "CAC总量": 50026601.118997, "CAB总量": 944714.0, "普通盲盒总量": 2723, "赛季盲盒总量": 84, "神话盲盒总量": 0, "神话盲盒碎片总量": 2230, "ahoy碎片总量": 4600}]}, "year": {"trend_monthly": [{"month": "2024-03", "avg_login": 14534.7, "avg_acu": 313.1, "avg_pcu": 1184.6, "sum_new": 34388.0}, {"month": "2024-04", "avg_login": 28952.6, "avg_acu": 2849.4, "avg_pcu": 3779.6, "sum_new": 80308.0}, {"month": "2024-05", "avg_login": 14545.9, "avg_acu": 1209.2, "avg_pcu": 1633.1, "sum_new": 4111.0}, {"month": "2024-06", "avg_login": 7903.3, "avg_acu": 580.3, "avg_pcu": 849.4, "sum_new": 1075.0}, {"month": "2024-07", "avg_login": 3727.8, "avg_acu": 250.6, "avg_pcu": 392.2, "sum_new": 391.0}, {"month": "2024-08", "avg_login": 1897.0, "avg_acu": 146.6, "avg_pcu": 239.9, "sum_new": 216.0}, {"month": "2024-09", "avg_login": 1630.1, "avg_acu": 118.8, "avg_pcu": 200.8, "sum_new": 51.0}, {"month": "2024-10", "avg_login": 1352.0, "avg_acu": 97.1, "avg_pcu": 172.8, "sum_new": 0.0}, {"month": "2024-11", "avg_login": 1238.6, "avg_acu": 94.7, "avg_pcu": 162.8, "sum_new": 0.0}, {"month": "2024-12", "avg_login": 1080.6, "avg_acu": 89.2, "avg_pcu": 149.2, "sum_new": 0.0}, {"month": "2025-01", "avg_login": 950.5, "avg_acu": 88.3, "avg_pcu": 136.7, "sum_new": 1.0}, {"month": "2025-02", "avg_login": 926.3, "avg_acu": 88.8, "avg_pcu": 129.1, "sum_new": 1.0}, {"month": "2025-03", "avg_login": 922.2, "avg_acu": 88.6, "avg_pcu": 126.4, "sum_new": 1.0}, {"month": "2025-04", "avg_login": 925.9, "avg_acu": 80.8, "avg_pcu": 118.2, "sum_new": 1.0}, {"month": "2025-05", "avg_login": 901.2, "avg_acu": 81.1, "avg_pcu": 119.9, "sum_new": 0.0}, {"month": "2025-06", "avg_login": 871.0, "avg_acu": 77.7, "avg_pcu": 115.3, "sum_new": 0.0}, {"month": "2025-07", "avg_login": 820.6, "avg_acu": 50.1, "avg_pcu": 85.5, "sum_new": 0.0}, {"month": "2025-08", "avg_login": 811.5, "avg_acu": 45.2, "avg_pcu": 79.2, "sum_new": 0.0}, {"month": "2025-09", "avg_login": 804.3, "avg_acu": 44.6, "avg_pcu": 77.9, "sum_new": 0.0}, {"month": "2025-10", "avg_login": 782.7, "avg_acu": 43.2, "avg_pcu": 75.7, "sum_new": 0.0}, {"month": "2025-11", "avg_login": 773.3, "avg_acu": 39.1, "avg_pcu": 70.6, "sum_new": 0.0}, {"month": "2025-12", "avg_login": 769.8, "avg_acu": 42.5, "avg_pcu": 74.0, "sum_new": 0.0}, {"month": "2026-01", "avg_login": 757.8, "avg_acu": 43.2, "avg_pcu": 76.5, "sum_new": 0.0}, {"month": "2026-02", "avg_login": 768.7, "avg_acu": 51.7, "avg_pcu": 83.2, "sum_new": 0.0}, {"month": "2026-03", "avg_login": 756.4, "avg_acu": 45.2, "avg_pcu": 77.5, "sum_new": 0.0}, {"month": "2026-04", "avg_login": 751.3, "avg_acu": 49.1, "avg_pcu": 83.6, "sum_new": 0.0}, {"month": "2026-05", "avg_login": 741.8, "avg_acu": 44.1, "avg_pcu": 80.7, "sum_new": 0.0}, {"month": "2026-06", "avg_login": 736.2, "avg_acu": 30.7, "avg_pcu": 78.4, "sum_new": 0.0}, {"month": "2026-07", "avg_login": 658.1, "avg_acu": 22.5, "avg_pcu": 67.1, "sum_new": 0.0}, {"month": "2026-08", "avg_login": 712.1, "avg_acu": 23.6, "avg_pcu": 73.1, "sum_new": 0.0}], "trend_summary": {"first_month": "2024-03", "first_login": 14534.7, "last_month": "2026-08", "last_login": 712.1, "peak_login": 28952.6, "login_drop_pct": -95.1}, "player_count": 1442, "country_top": [["CN", 1064], ["BR", 197], ["KR", 37], ["US", 36], ["PT", 19], ["RU", 18], ["GB", 18], ["PH", 10], ["TW", 9], ["ID", 6], ["HK", 6], ["SG", 4], ["CA", 3], ["JP", 3], ["SA", 2]], "channel_top": [["GOOGLEPLAY", 1010], ["WEB3_30002_2", 340], ["APPSTORE", 92]], "wallet": {"有": 1344, "无": 98}, "login_hour": [44, 19, 44, 32, 19, 20, 24, 39, 29, 36, 36, 27, 48, 55, 202, 189, 128, 158, 132, 79, 27, 10, 26, 19], "cac_stats": {"count": 1442, "sum": 50026601.12, "mean": 34692.5112, "std": 76431.4067, "min": 0.0, "max": 734462.2881, "p10": 0.0004, "p25": 175.5478, "median": 20269.6709, "p75": 29729.151, "p90": 80946.5587, "p99": 449375.1336}, "game_recharge_stats": {"count": 1442, "sum": 124220.38, "mean": 86.1445, "std": 1735.5323, "min": 0.0, "max": 65923.81, "p10": 0.99, "p25": 39.99, "median": 39.99, "p75": 39.99, "p90": 45.97, "p99": 139.98}, "onchain_net_stats": {"count": 1442, "sum": 75921.02, "mean": 52.6498, "std": 1984.1525, "min": -30581.032, "max": 51452.0364, "p10": -32.8022, "p25": -16.2532, "median": 0.0, "p75": 51.6624, "p90": 293.2, "p99": 2739.2782}, "total_amount_stats": {"count": 1442, "sum": 200141.4, "mean": 138.7943, "std": 2698.6966, "min": -30571.042, "max": 69499.3756, "p10": 0.0, "p25": 22.2326, "median": 30.66, "p75": 92.3011, "p90": 354.7707, "p99": 2779.2682}, "onchain_sign": {"positive": 631, "negative": 681, "zero": 130}, "total_amount_buckets": [["<-1000", 20], ["-1000~-100", 52], ["-100~0", 59], ["0~100", 974], ["100~1000", 298], ["1000~10000", 36], [">=10000", 3]], "cac_buckets": [["<1", 225], ["1~100", 112], ["100~1000", 135], ["1000~1万", 148], ["1万~10万", 731], [">=10万", 91]], "game_assets": {"cab_total": 944714.0, "box_normal": 2723, "box_season": 84, "box_myth": 0, "myth_frag": 2230, "ahoy_frag": 4600}, "asset_holders": {"普通盲盒": 465, "神话盲盒碎片": 65, "ahoy碎片": 5, "赛季盲盒": 14}, "total_amount_full": {"样本数": 1442, "合计": 200141.4, "平均数": 138.7943, "中位数": 30.66, "标准差": 2698.6966, "最大值": 69499.3756, "最小值": -30571.042, "P10": 0.0, "P25": 22.2326, "P75": 92.3011, "P90": 354.7707, "P99": 2779.2682, "正数(净投入/亏损)人数": 1212, "负数(净提出/获利)人数": 131, "零": 99}, "period_assets": [{"活跃周期": "近1周", "活跃玩家数": 735, "历史充值总量(美元)": 30441.24, "CAC总量": 41213616.251513, "CAB总量": 505207.0, "普通盲盒总量": 2189, "赛季盲盒总量": 4, "神话盲盒总量": 0, "神话盲盒碎片总量": 1474, "ahoy碎片总量": 3625}, {"活跃周期": "3个月", "活跃玩家数": 873, "历史充值总量(美元)": 101097.43, "CAC总量": 45267184.941486, "CAB总量": 564152.0, "普通盲盒总量": 2435, "赛季盲盒总量": 21, "神话盲盒总量": 0, "神话盲盒碎片总量": 2073, "ahoy碎片总量": 3700}, {"活跃周期": "半年", "活跃玩家数": 1014, "历史充值总量(美元)": 105851.63, "CAC总量": 46038401.225191, "CAB总量": 655519.0, "普通盲盒总量": 2495, "赛季盲盒总量": 23, "神话盲盒总量": 0, "神话盲盒碎片总量": 2110, "ahoy碎片总量": 3700}, {"活跃周期": "1年", "活跃玩家数": 1442, "历史充值总量(美元)": 124220.38, "CAC总量": 50026601.118997, "CAB总量": 944714.0, "普通盲盒总量": 2723, "赛季盲盒总量": 84, "神话盲盒总量": 0, "神话盲盒碎片总量": 2230, "ahoy碎片总量": 4600}]}, "risk": {"s1": {"total": 997, "high": 24, "pnl_sum": 176759.23, "region": [["CN", 14], ["BR", 5], ["KR", 2], ["CA", 1], ["GB", 1], ["PT", 1]], "region_rows": [{"region": "CN", "count": 14, "sum": 143915.71}, {"region": "BR", "count": 5, "sum": 22745.62}, {"region": "KR", "count": 2, "sum": 6540.35}, {"region": "CA", "count": 1, "sum": 1279.84}, {"region": "GB", "count": 1, "sum": 1190.77}, {"region": "PT", "count": 1, "sum": 1086.94}], "tier_rows": [{"name": "1千-5千", "count": 18, "sum": 31748.69}, {"name": "5千-1万", "count": 2, "sum": 10558.88}, {"name": "1万以上", "count": 3, "sum": 133784.65}]}, "s2": {"total": 399, "high": 16, "pnl_sum": 46959.96, "region": [["CN", 7], ["KR", 3], ["BR", 3], ["TW", 1], ["US", 1], ["GB", 1]], "region_rows": [{"region": "CN", "count": 7, "sum": 20615.15}, {"region": "KR", "count": 3, "sum": 13886.59}, {"region": "BR", "count": 3, "sum": 6556.51}, {"region": "TW", "count": 1, "sum": 3566.09}, {"region": "US", "count": 1, "sum": 1210.99}, {"region": "GB", "count": 1, "sum": 1124.63}], "tier_rows": [{"name": "1千-5千", "count": 14, "sum": 31628.19}, {"name": "5千-1万", "count": 2, "sum": 15331.77}, {"name": "1万以上", "count": 0, "sum": 0}]}}};
+
+const H=B.half, Y=B.year;
+const P4=B.risk;
+
+function palette(){
+  return document.body.dataset.theme==='light'
+  ? {accent:'#2f6bff',green:'#0f9d6a',red:'#e5484d',amber:'#c77a00',purple:'#7a5af8',
+     grid:'rgba(20,30,60,.08)',txt:'#5b6679'}
+  : {accent:'#4f8cff',green:'#37c98b',red:'#ff6b6b',amber:'#ffb454',purple:'#a887ff',
+     grid:'rgba(255,255,255,.06)',txt:'#96a0b5'};
+}
+function applyDefaults(){
+  const C=palette();
+  Chart.defaults.color=C.txt;
+  Chart.defaults.font.family="-apple-system,'PingFang SC','Microsoft YaHei',sans-serif";
+  return C;
+}
+function destroyIn(panelId){
+  document.querySelectorAll('#'+panelId+' canvas').forEach(c=>Chart.getChart(c)&&Chart.getChart(c).destroy());
+}
+function makeScales(C){
+  const g={grid:{color:C.grid},ticks:{color:C.txt}};
+  return {x:g,y:{...g,beginAtZero:true}};
+}
+
+/* ---------- 模块一：整体概览 ---------- */
+function initM1(){
+  destroyIn('panel1');
+  const C=applyDefaults();
+  const scales=makeScales(C);
+  const months=H.trend_monthly.map(t=>t.month);
+  new Chart(loginTrend,{type:'line',data:{labels:months,datasets:[{data:H.trend_monthly.map(t=>t.avg_login),borderColor:C.accent,backgroundColor:'rgba(79,140,255,.15)',fill:true,tension:.25,pointRadius:2}]},options:{plugins:{legend:{display:false}},scales}});
+  new Chart(acuTrend,{type:'line',data:{labels:months,datasets:[{data:H.trend_monthly.map(t=>t.avg_acu),borderColor:C.green,backgroundColor:'rgba(55,201,139,.15)',fill:true,tension:.25,pointRadius:2}]},options:{plugins:{legend:{display:false}},scales}});
+  new Chart(newTrend,{type:'bar',data:{labels:months,datasets:[{data:H.trend_monthly.map(t=>t.sum_new),backgroundColor:C.amber}]},options:{plugins:{legend:{display:false}},scales}});
+  const rows=H.period_assets;
+  if(rows&&rows.length){
+    const cols=Object.keys(rows[0]);
+    let h='<thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>';
+    rows.forEach(r=>{h+='<tr>'+cols.map(c=>{let v=r[c];if(typeof v==='number')v=v.toLocaleString(undefined,{maximumFractionDigits:0});return '<td>'+v+'</td>';}).join('')+'</tr>';});
+    document.getElementById('periodTable').innerHTML=h+'</tbody>';
+  }
+}
+
+/* ---------- 模块二：近半年活跃用户专题 ---------- */
+function initM2(){
+  destroyIn('panel2');
+  const C=applyDefaults();
+  const scales=makeScales(C);
+  const ctop=H.country_top.slice(0,10);
+  new Chart(countryChart,{type:'bar',data:{labels:ctop.map(x=>x[0]),datasets:[{data:ctop.map(x=>x[1]),backgroundColor:C.accent}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales}});
+  new Chart(channelChart,{type:'doughnut',data:{labels:H.channel_top.map(x=>x[0]),datasets:[{data:H.channel_top.map(x=>x[1]),backgroundColor:[C.accent,C.purple,C.amber,C.green,C.red]}]},options:{plugins:{legend:{position:'right'}}}});
+  const wl=H.wallet;
+  new Chart(walletChart,{type:'bar',data:{labels:['钱包'],datasets:[{label:'有',data:[wl['有']||0],backgroundColor:C.green},{label:'无',data:[wl['无']||0],backgroundColor:C.red}]},options:{indexAxis:'y',scales:{x:{stacked:true,...makeScales(C).x},y:{stacked:true,...makeScales(C).y}}}});
+  new Chart(hourChart,{type:'bar',data:{labels:[...Array(24).keys()].map(h=>h+'时'),datasets:[{data:H.login_hour,backgroundColor:C.purple}]},options:{plugins:{legend:{display:false}},scales}});
+  new Chart(onchainSign,{type:'doughnut',data:{labels:['净充入(正)','净提出(负)','零值'],datasets:[{data:[H.onchain_sign.positive,H.onchain_sign.negative,H.onchain_sign.zero],backgroundColor:[C.green,C.red,C.txt]}]},options:{plugins:{legend:{position:'right'}}}});
+  new Chart(totalBucket,{type:'bar',data:{labels:H.total_amount_buckets.map(x=>x[0]),datasets:[{data:H.total_amount_buckets.map(x=>x[1]),backgroundColor:C.accent}]},options:{plugins:{legend:{display:false}},scales}});
+  new Chart(cacBucket,{type:'bar',data:{labels:H.cac_buckets.map(x=>x[0]),datasets:[{data:H.cac_buckets.map(x=>x[1]),backgroundColor:C.amber}]},options:{plugins:{legend:{display:false}},scales}});
+  const ah=H.asset_holders;
+  new Chart(assetHolder,{type:'bar',data:{labels:Object.keys(ah),datasets:[{data:Object.values(ah),backgroundColor:C.purple}]},options:{plugins:{legend:{display:false}},scales}});
+}
+
+/* ---------- 模块三：近1年 vs 近半年 对比 ---------- */
+function initM3(){
+  destroyIn('panel3');
+  const C=applyDefaults();
+  const scales=makeScales(C);
+  new Chart(cmpScale,{type:'bar',data:{labels:['活跃玩家数','冲提额合计'],datasets:[
+    {label:'近半年',data:[H.player_count,H.total_amount_full['合计']],backgroundColor:C.accent},
+    {label:'近1年',data:[Y.player_count,Y.total_amount_full['合计']],backgroundColor:C.green}]},
+    options:{scales}});
+  new Chart(cmpSign,{type:'bar',data:{labels:['净投入(亏损)','净提出(获利)','零值'],datasets:[
+    {label:'近半年',data:[H.onchain_sign.positive,H.onchain_sign.negative,H.onchain_sign.zero],backgroundColor:C.accent},
+    {label:'近1年',data:[Y.onchain_sign.positive,Y.onchain_sign.negative,Y.onchain_sign.zero],backgroundColor:C.green}]},
+    options:{scales}});
+  new Chart(cmpBucket,{type:'bar',data:{labels:H.total_amount_buckets.map(x=>x[0]),datasets:[
+    {label:'近半年',data:H.total_amount_buckets.map(x=>x[1]),backgroundColor:C.accent},
+    {label:'近1年',data:Y.total_amount_buckets.map(x=>x[1]),backgroundColor:C.green}]},
+    options:{scales}});
+}
+
+/* ---------- 模块四：高风险维权人群（仅聚合统计，无个人明细） ---------- */
+function initM4(){
+  destroyIn('panel4');
+  const C=applyDefaults();
+  const g={grid:{color:C.grid},ticks:{color:C.txt}};
+  const s1=P4.s1,s2=P4.s2;
+  new Chart(riskCmp,{type:'bar',data:{labels:['维度一 · 近半年活跃','维度二 · 近1年沉默高投入'],datasets:[
+    {label:'高风险人数',data:[s1.high,s2.high],backgroundColor:[C.accent,C.purple],borderRadius:6,yAxisID:'y'},
+    {label:'高风险净投入合计($)',data:[s1.pnl_sum,s2.pnl_sum],type:'line',borderColor:C.red,backgroundColor:'rgba(255,107,107,.10)',fill:true,tension:.2,pointRadius:5,yAxisID:'y1'}]},
+    options:{scales:{y:{...g,beginAtZero:true,title:{display:true,text:'人数'}},
+      y1:{...g,beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'美元($)'}}},
+      plugins:{legend:{position:'bottom'},
+      tooltip:{callbacks:{label:c=>c.dataset.label+': '+Number(c.parsed.y).toLocaleString(undefined,{maximumFractionDigits:0})}}}}});
+}
+
+const inited=[false,false,false,false];
+function initM(n){ [initM1,initM2,initM3,initM4][n-1](); }
+
+function switchTab(i){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel'+i).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',+b.dataset.tab===i));
+  if(!inited[i-1]){inited[i-1]=true; initM(i);}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function setTheme(t){
+  document.body.dataset.theme=t;
+  document.getElementById('themeBtn').textContent = t==='dark' ? '☀️' : '🌙';
+  localStorage.setItem('ca_dash_theme',t);
+  for(let i=1;i<=4;i++){ if(inited[i-1]) initM(i); }
+}
+function initTheme(){
+  let t=localStorage.getItem('ca_dash_theme');
+  if(!t){ t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; }
+  document.body.dataset.theme=t;
+  document.getElementById('themeBtn').textContent = t==='dark' ? '☀️' : '🌙';
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',function(){switchTab(+this.dataset.tab);}));
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    setTheme(document.body.dataset.theme==='dark' ? 'light' : 'dark');
+  });
+  initTheme();
+});
+// 等 window load（布局/视口就绪）再首绘图表，避免 Chart.js 在 0/小尺寸容器上初始化
+window.addEventListener('load',function(){ switchTab(1); });
+
+</script></body></html>
