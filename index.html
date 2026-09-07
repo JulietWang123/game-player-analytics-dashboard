@@ -161,24 +161,32 @@ footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:60px;paddi
 <h2 class="sub-h">4. 高频登录时段</h2>
 <div class="chart-box"><h3>登录时段分布（0–23 时）</h3><canvas id="hourChart"></canvas></div>
 <h2 class="sub-h">5. 冲提额与链上资金盈亏 ★核心</h2>
+<p class="sec-desc">近半年活跃玩家的游戏内充值、链上充提净值与总冲提额分布。总冲提额=游戏内充值+链上钱包充值-链上钱包提取，正数=净投入（亏损）、负数=净提出（盈利）。这是评估关停维权风险的核心指标。</p>
 <div class="cards">
   <div class="kpi"><div class="label">游戏内充值总额</div><div class="value">$105,852</div></div>
-  <div class="kpi"><div class="label">链上净充入 / 净提出 人数</div><div class="value"><span class="up">393</span> / <span class="down">575</span></div><div class="delta">零值 46 人</div></div>
-  <div class="kpi"><div class="label">总冲提额合计</div><div class="value">110,755</div><div class="delta">中位数 27.2</div></div>
+  <div class="kpi"><div class="label">亏损者 / 盈利者 人数</div><div class="value"><span class="down">895</span> / <span class="up">82</span></div><div class="delta">零值 37 人</div></div>
+  <div class="kpi"><div class="label">总亏损金额</div><div class="value" style="color:var(--red)">110,755</div><div class="delta">中位数 27.2</div></div>
   <div class="kpi"><div class="label">链上净值区间</div><div class="value" style="font-size:19px">-30,581 ~ 51,452</div></div>
 </div>
-<div class="chart-box"><h3>总冲提额分布统计（半年 n=1,014）</h3>
-  <p class="hint">总冲提额 = 游戏内充值 + 链上充提净值。正数=净投入(看似亏损/维权强)；负数=已净提出(获利)。单位：美元。</p>
+<div class="chart-box"><h3>总盈亏情况分布统计（仅统计近半年活跃用户；半年n=1014）</h3>
+  <p class="hint">总冲提额=游戏内充值+链上钱包充值-链上钱包提取。<b>正数</b>=净投入（存在亏损，更容易产生维权想法）；<b>负数</b>=已净提出（获利）。单位：美元。</p>
   <table style="max-width:760px"><tbody>
-    <tr><th>平均数 Mean</th><td>109.23</td><th>中位数 Median</th><td>27.16</td></tr>
-    <tr><th>最大值 Max</th><td style="color:var(--red);font-weight:600">69,499.38</td><th>最小值 Min</th><td style="color:var(--green);font-weight:600">-30,571.04</td></tr>
-    <tr><th>合计 Sum</th><td>110,754.72</td><th>标准差 Std</th><td>3,182.71</td></tr>
-    <tr><th>P10 / P25</th><td>0.00 / 22.62</td><th>P75 / P90</th><td>71.49 / 265.47</td></tr>
-    <tr><th>P99</th><td>1,854.52</td><th>正 / 负 / 零 人数</th><td><span class="down">895</span> / <span class="up">82</span> / 37</td></tr>
-  </tbody></table></div>
+    <tr><th>平均盈亏额 (Mean)</th><td style="color:var(--red);font-weight:600">109.23（亏损）</td><th>中位数 (Median)</th><td style="color:var(--red);font-weight:600">27.16（亏损）</td></tr>
+    <tr><th>最多亏损额 (Max)</th><td style="color:var(--red);font-weight:600">69,499.38（亏损）</td><th>最多盈利额 (Min)</th><td style="color:var(--green);font-weight:600">-30,571.04（盈利）</td></tr>
+    <tr><th>总亏损金额 (Sum)</th><td style="color:var(--red);font-weight:600">110,754.72（亏损）</td><th>标准差 (Std)</th><td>3,182.71</td></tr>
+    <tr><th>P10 / P25</th><td>0.00 / <span style="color:var(--red);font-weight:600">22.62（亏损）</span></td><th>P75 / P90</th><td><span style="color:var(--red);font-weight:600">71.49（亏损）</span> / <span style="color:var(--red);font-weight:600">265.47（亏损）</span></td></tr>
+    <tr><th>P99</th><td style="color:var(--red);font-weight:600">1,854.52（亏损）</td><th>亏损(净投入为正) / 盈利(净提出) / 零 人数</th><td><span class="down">895</span> / <span class="up">82</span> / 37</td></tr>
+  </tbody></table>
+  <div class="note" style="margin-top:14px">
+    <b>解读：</b>中位数仅 <b>27.2</b> 而平均盈亏额 <b>109.2</b>、标准差高达 <b>3,183</b>，说明<b>分布极度右偏</b>——绝大多数玩家净投入很小，少数高投入玩家（最多亏损额 69,499）大幅拉高均值。P90 为 265，即 90% 玩家净投入在 265 美元以内；风险高度集中在头部少数人。</div>
+</div>
 <div class="grid2">
-  <div class="chart-box"><h3>链上充提净值：净充入 vs 净提出</h3><canvas id="onchainSign"></canvas></div>
-  <div class="chart-box"><h3>总冲提额分档（人数）</h3><canvas id="totalBucket"></canvas></div>
+  <div class="chart-box"><h3>盈亏人数统计：净亏损 vs 净盈利</h3>
+    <p class="hint">近半年活跃玩家中，亏损者（净投入为正）895 人远多于盈利者（净提出）82 人。</p>
+    <canvas id="onchainSign"></canvas></div>
+  <div class="chart-box"><h3>总冲提额分档（人数）</h3>
+    <p class="hint">总冲提额=游戏内充值+链上钱包充值-链上钱包提取，多数玩家集中在 0~100 区间。</p>
+    <canvas id="totalBucket"></canvas></div>
 </div>
 <h2 class="sub-h">6. CAC 余额与游戏内资产</h2>
 <div class="cards">
@@ -199,10 +207,10 @@ footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:60px;paddi
 <h2 class="sub-h">7. 核心指标对比</h2>
 <p class="sec-desc">1年活跃比半年多 428 人（多出的是半年内不活跃、但近1年内曾活跃的用户）。</p>
 <div class="chart-box"><h3>半年 vs 1年 关键指标对照</h3>
-  <table><thead><tr><th>指标</th><th>近半年活跃</th><th>近1年活跃</th></tr></thead><tbody><tr><td>活跃玩家数</td><td class=num>1,014</td><td class=num>1,442</td></tr><tr><td>总冲提额合计(美元)</td><td class=num>110,755</td><td class=num>200,141</td></tr><tr><td>总冲提额中位数</td><td class=num>27.2</td><td class=num>30.7</td></tr><tr><td>总冲提额平均数</td><td class=num>109.2</td><td class=num>138.8</td></tr><tr><td>P90</td><td class=num>265</td><td class=num>355</td></tr><tr><td>P99</td><td class=num>1,855</td><td class=num>2,779</td></tr><tr><td>净投入(亏损)人数</td><td class=num>895</td><td class=num>1,212</td></tr><tr><td>净提出(获利)人数</td><td class=num>82</td><td class=num>131</td></tr></tbody></table></div>
+  <table><thead><tr><th>指标</th><th>近半年活跃</th><th>近1年活跃</th></tr></thead><tbody><tr><td>活跃玩家数</td><td class=num>1,014</td><td class=num>1,442</td></tr><tr><td>总冲提额合计(美元)</td><td class=num>110,755</td><td class=num>200,141</td></tr><tr><td>总冲提额中位数</td><td class=num>27.2</td><td class=num>30.7</td></tr><tr><td>总冲提额平均数</td><td class=num>109.2</td><td class=num>138.8</td></tr><tr><td>P90</td><td class=num>265</td><td class=num>355</td></tr><tr><td>P99</td><td class=num>1,855</td><td class=num>2,779</td></tr><tr><td>亏损者(净投入为正)人数</td><td class=num>895</td><td class=num>1,212</td></tr><tr><td>盈利者(净提出)人数</td><td class=num>82</td><td class=num>131</td></tr></tbody></table></div>
 <div class="grid2">
   <div class="chart-box"><h3>活跃玩家数 & 冲提额合计对比</h3><canvas id="cmpScale"></canvas></div>
-  <div class="chart-box"><h3>净投入 vs 净提出 人数对比</h3><canvas id="cmpSign"></canvas></div>
+  <div class="chart-box"><h3>盈亏人数对比：亏损者 vs 盈利者</h3><canvas id="cmpSign"></canvas></div>
 </div>
 <div class="chart-box"><h3>总冲提额分档对比（人数）</h3>
   <p class="hint">两口径的总冲提额分档人数对比。</p>
@@ -299,7 +307,7 @@ function initM2(){
   const wl=H.wallet;
   new Chart(walletChart,{type:'bar',data:{labels:['钱包'],datasets:[{label:'有',data:[wl['有']||0],backgroundColor:C.green},{label:'无',data:[wl['无']||0],backgroundColor:C.red}]},options:{indexAxis:'y',scales:{x:{stacked:true,...makeScales(C).x},y:{stacked:true,...makeScales(C).y}}}});
   new Chart(hourChart,{type:'bar',data:{labels:[...Array(24).keys()].map(h=>h+'时'),datasets:[{data:H.login_hour,backgroundColor:C.purple}]},options:{plugins:{legend:{display:false}},scales}});
-  new Chart(onchainSign,{type:'doughnut',data:{labels:['净充入(正)','净提出(负)','零值'],datasets:[{data:[H.onchain_sign.positive,H.onchain_sign.negative,H.onchain_sign.zero],backgroundColor:[C.green,C.red,C.txt]}]},options:{plugins:{legend:{position:'right'}}}});
+  new Chart(onchainSign,{type:'doughnut',data:{labels:['亏损者（净投入为正）','盈利者（净提出）','零值'],datasets:[{data:[H.total_amount_full['正数(净投入/亏损)人数'],H.total_amount_full['负数(净提出/获利)人数'],H.total_amount_full['零']],backgroundColor:[C.red,C.green,C.txt]}]},options:{plugins:{legend:{position:'right'}}}});
   new Chart(totalBucket,{type:'bar',data:{labels:H.total_amount_buckets.map(x=>x[0]),datasets:[{data:H.total_amount_buckets.map(x=>x[1]),backgroundColor:C.accent}]},options:{plugins:{legend:{display:false}},scales}});
   new Chart(cacBucket,{type:'bar',data:{labels:H.cac_buckets.map(x=>x[0]),datasets:[{data:H.cac_buckets.map(x=>x[1]),backgroundColor:C.amber}]},options:{plugins:{legend:{display:false}},scales}});
   const ah=H.asset_holders;
@@ -315,9 +323,9 @@ function initM3(){
     {label:'近半年',data:[H.player_count,H.total_amount_full['合计']],backgroundColor:C.accent},
     {label:'近1年',data:[Y.player_count,Y.total_amount_full['合计']],backgroundColor:C.green}]},
     options:{scales}});
-  new Chart(cmpSign,{type:'bar',data:{labels:['净投入(亏损)','净提出(获利)','零值'],datasets:[
-    {label:'近半年',data:[H.onchain_sign.positive,H.onchain_sign.negative,H.onchain_sign.zero],backgroundColor:C.accent},
-    {label:'近1年',data:[Y.onchain_sign.positive,Y.onchain_sign.negative,Y.onchain_sign.zero],backgroundColor:C.green}]},
+  new Chart(cmpSign,{type:'bar',data:{labels:['亏损者(净投入为正)','盈利者(净提出)','零值'],datasets:[
+    {label:'近半年',data:[H.total_amount_full['正数(净投入/亏损)人数'],H.total_amount_full['负数(净提出/获利)人数'],H.total_amount_full['零']],backgroundColor:C.accent},
+    {label:'近1年',data:[Y.total_amount_full['正数(净投入/亏损)人数'],Y.total_amount_full['负数(净提出/获利)人数'],Y.total_amount_full['零']],backgroundColor:C.green}]},
     options:{scales}});
   new Chart(cmpBucket,{type:'bar',data:{labels:H.total_amount_buckets.map(x=>x[0]),datasets:[
     {label:'近半年',data:H.total_amount_buckets.map(x=>x[1]),backgroundColor:C.accent},
